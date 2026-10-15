@@ -1,57 +1,134 @@
-import { Database, GraduationCap, ShieldCheck } from "lucide-react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "./db/db.js";
+import { useEffect, useState } from 'react'
+import {
+  Activity, ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, Bell, BookOpen,
+  CalendarDays, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight,
+  CircleHelp, Clock3, Command, FileText, Flag, GraduationCap, LayoutDashboard,
+  LogOut, Menu, MoreHorizontal, PanelLeftClose, Search, Settings2, ShieldCheck,
+  Sparkles, Timer, X,
+} from 'lucide-react'
 
-export default function App() {
-  const counts = useLiveQuery(async () => ({
-    students: await db.siswa.count(),
-    questions: await db.soal.count(),
-    exams: await db.ujian.count(),
-  }));
+const exams = [
+  { subject: 'Matematika', topic: 'Trigonometri & limit', date: 'Hari ini', time: '09.00 – 10.30', duration: '90 menit', color: 'bg-[#e7edff] text-[#5368b6]', icon: '∑', status: 'Berlangsung', initials: 'MTK' },
+  { subject: 'Bahasa Indonesia', topic: 'Teks editorial', date: 'Besok, 16 Okt', time: '10.00 – 11.30', duration: '90 menit', color: 'bg-[#fbe9dc] text-[#bb7045]', icon: 'Aa', status: 'Akan datang', initials: 'BIN' },
+  { subject: 'Fisika', topic: 'Gelombang mekanik', date: 'Senin, 19 Okt', time: '08.00 – 09.30', duration: '90 menit', color: 'bg-[#e0f1e6] text-[#43825a]', icon: 'ϕ', status: 'Akan datang', initials: 'FIS' },
+]
+
+const questions = [
+  { subject: 'Identitas trigonometri', text: 'Jika sin x = 3/5 dan x berada di kuadran I, nilai dari cos x adalah …', options: ['2/5', '3/4', '4/5', '5/4', '5/3'] },
+  { subject: 'Persamaan trigonometri', text: 'Himpunan penyelesaian dari 2 sin x = 1 untuk 0° ≤ x ≤ 360° adalah …', options: ['30° dan 150°', '30° dan 330°', '60° dan 120°', '45° dan 135°', '150° dan 330°'] },
+  { subject: 'Limit fungsi', text: 'Nilai dari lim (x² − 9)/(x − 3) untuk x mendekati 3 adalah …', options: ['0', '3', '6', '9', 'Tidak terdefinisi'] },
+  { subject: 'Aturan sinus', text: 'Pada segitiga ABC, sisi a = 8, sudut A = 30°, dan sudut B = 45°. Panjang sisi b adalah …', options: ['4√2', '8√2', '4√3', '8', '12'] },
+  { subject: 'Grafik fungsi', text: 'Periode dari fungsi y = 2 cos(3x) adalah …', options: ['π/3', '2π/3', 'π', '3π/2', '2π'] },
+  { subject: 'Turunan fungsi', text: 'Jika f(x) = sin 2x, maka f′(x) adalah …', options: ['cos 2x', '−cos 2x', '2 cos 2x', '2 sin 2x', '−2 sin 2x'] },
+  { subject: 'Sudut istimewa', text: 'Nilai dari tan 60° × cos 30° adalah …', options: ['1/2', '1', '√2', '3/2', '√3'] },
+  { subject: 'Limit trigonometri', text: 'Nilai lim sin 4x / 2x untuk x mendekati 0 adalah …', options: ['0', '1', '2', '4', 'Tidak ada'] },
+]
+
+function App() {
+  const [active, setActive] = useState('Beranda')
+  const [examOpen, setExamOpen] = useState(false)
+  const [question, setQuestion] = useState(0)
+  const [answers, setAnswers] = useState({})
+  const [flagged, setFlagged] = useState([])
+  const [seconds, setSeconds] = useState(89 * 60 + 42)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showSubmit, setShowSubmit] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [notice, setNotice] = useState('')
+
+  useEffect(() => {
+    if (!examOpen || submitted) return undefined
+    const timer = setInterval(() => setSeconds((value) => Math.max(0, value - 1)), 1000)
+    return () => clearInterval(timer)
+  }, [examOpen, submitted])
+
+  const startExam = () => { setExamOpen(true); setActive('Ujian'); setQuestion(0); setSeconds(89 * 60 + 42) }
+  const finishExam = () => { setShowSubmit(false); setSubmitted(true) }
+  const showNotice = (message) => { setNotice(message); setTimeout(() => setNotice(''), 2400) }
+  const formatTime = (value) => `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`
+
+  if (examOpen) {
+    return <ExamScreen {...{ question, setQuestion, answers, setAnswers, flagged, setFlagged, seconds, formatTime, setExamOpen, finishExam, showSubmit, setShowSubmit, submitted, setSubmitted }} />
+  }
+
+  const menu = [
+    { label: 'MENU UTAMA', items: [{ name: 'Beranda', icon: LayoutDashboard }, { name: 'Jadwal Ujian', icon: CalendarDays }, { name: 'Hasil Ujian', icon: Activity }, { name: 'Materi Belajar', icon: BookOpen }] },
+    { label: 'LAINNYA', items: [{ name: 'Bantuan', icon: CircleHelp }, { name: 'Pengaturan', icon: Settings2 }] },
+  ]
 
   return (
-    <main className="min-h-screen bg-slate-100 px-5 py-12 text-slate-900">
-      <section className="mx-auto max-w-4xl overflow-hidden rounded-2xl bg-white shadow-xl shadow-slate-900/5">
-        <header className="bg-navy-900 px-8 py-8 text-white sm:px-10">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-white/10 p-3">
-              <GraduationCap aria-hidden="true" size={28} />
-            </div>
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-200">CBT Sekolah</p>
-              <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Computer Based Test SMA</h1>
-            </div>
-          </div>
-          <p className="mt-5 max-w-2xl leading-7 text-blue-100">
-            Platform ujian lokal yang menyimpan data di browser dan dirancang untuk penggunaan offline di laboratorium sekolah.
-          </p>
-        </header>
-
-        <div className="grid gap-5 p-8 sm:grid-cols-2 sm:p-10">
-          <div className="rounded-xl border border-slate-200 p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
-              <Database aria-hidden="true" size={18} /> Database lokal
-            </div>
-            <p className="mt-3 text-2xl font-bold text-navy-900">IndexedDB siap</p>
-            <p className="mt-2 text-sm leading-6 text-slate-500">Data tetap berada di perangkat ini dan tersedia saat browser dibuka kembali.</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
-              <ShieldCheck aria-hidden="true" size={18} /> Data contoh
-            </div>
-            <p className="mt-3 text-2xl font-bold text-navy-900">
-              {counts ? `${counts.students} siswa · ${counts.questions} soal` : "Memuat data…"}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              {counts ? `${counts.exams} jadwal ujian tersedia untuk pengembangan tahap berikutnya.` : "Seed database sedang diperiksa."}
-            </p>
-          </div>
+    <div className="min-h-screen bg-paper text-ink">
+      <aside className={`fixed inset-y-0 left-0 z-40 flex w-[252px] flex-col border-r border-[#e9ece5] bg-white px-5 py-6 transition-transform lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="flex items-center gap-3 px-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-forest text-lime"><GraduationCap size={23} strokeWidth={2.2} /></div>
+          <div><div className="font-display text-[17px] font-extrabold tracking-[-.04em]">ruang<span className="text-forest">ujian</span></div><div className="mt-0.5 text-[10px] font-semibold uppercase tracking-[.14em] text-[#98a098]">SMA Negeri 1 Jayapura</div></div>
         </div>
+        <div className="mt-10 space-y-7">
+          {menu.map((group) => <div key={group.label}><p className="mb-2.5 px-3 text-[10px] font-bold tracking-[.16em] text-[#a4aaa2]">{group.label}</p><div className="space-y-1">{group.items.map(({ name, icon: Icon }) => <button key={name} onClick={() => { setActive(name); setSidebarOpen(false); if (name !== 'Beranda') showNotice(`${name} siap dibuka`) }} className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold transition ${active === name ? 'bg-[#edf3e8] text-forest' : 'text-[#7e8880] hover:bg-[#f7f8f5] hover:text-ink'}`}><Icon size={17} strokeWidth={1.8} /><span>{name}</span>{name === 'Jadwal Ujian' && <span className="ml-auto rounded-md bg-white px-1.5 py-0.5 text-[10px] text-[#788878]">3</span>}</button>)}</div></div>)}
+        </div>
+        <div className="mt-auto rounded-2xl bg-[#f5f7f1] p-4"><div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-forest"><ShieldCheck size={17} /></div><p className="mt-3 text-[12px] font-bold">Ujian dengan tenang</p><p className="mt-1 text-[11px] leading-relaxed text-[#818b81]">Pastikan koneksi internet stabil sebelum memulai ujian.</p><button onClick={() => showNotice('Pusat bantuan sekolah')} className="mt-3 flex items-center gap-1 text-[11px] font-bold text-forest">Pusat bantuan <ArrowRight size={13} /></button></div>
+        <div className="mt-5 flex items-center gap-3 border-t border-[#edf0ea] pt-5"><div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#eedfd0] font-display text-[12px] font-extrabold text-[#785c46]">NA</div><div className="min-w-0 flex-1"><p className="truncate text-[12px] font-bold">Nadia Azzahra</p><p className="text-[10px] text-[#929a91]">XI IPA 2 · 2026/2027</p></div><MoreHorizontal size={18} className="text-[#a1a8a0]" /></div>
+      </aside>
+      {sidebarOpen && <button aria-label="Tutup menu" onClick={() => setSidebarOpen(false)} className="fixed inset-0 z-30 bg-ink/20 lg:hidden" />}
+      <main className="min-h-screen lg:ml-[252px]">
+        <header className="sticky top-0 z-20 flex h-[72px] items-center justify-between border-b border-[#e9ece5] bg-paper/90 px-5 backdrop-blur-md sm:px-8 lg:px-10">
+          <div className="flex items-center gap-3"><button onClick={() => setSidebarOpen(true)} className="rounded-lg p-2 hover:bg-white lg:hidden"><Menu size={19} /></button><div><p className="text-[11px] text-[#8e988e]">Kamis, 15 Oktober 2026 <span className="mx-1.5">·</span> Semester Ganjil</p><p className="mt-0.5 font-display text-[14px] font-bold">{active === 'Beranda' ? 'Dashboard siswa' : active}</p></div></div>
+          <div className="flex items-center gap-2 sm:gap-3"><button className="hidden h-9 items-center gap-2 rounded-xl border border-[#e7eae4] bg-white px-3 text-[11px] text-[#929a91] sm:flex"><Search size={14} /> Cari sesuatu <kbd className="ml-5 rounded border border-[#eceee9] px-1 py-0.5 text-[9px]">⌘ K</kbd></button><button onClick={() => showNotice('Belum ada notifikasi baru')} aria-label="Notifikasi" className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-[#e7eae4] bg-white text-[#6d786f]"><Bell size={16} /><span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[#df8764] ring-2 ring-white" /></button><div className="hidden h-8 w-px bg-[#e5e9e2] sm:block" /><div className="hidden items-center gap-2.5 sm:flex"><div className="text-right"><p className="text-[11px] font-bold">Nadia Azzahra</p><p className="text-[10px] text-[#969e95]">Siswa</p></div><div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#eedfd0] font-display text-[11px] font-extrabold text-[#785c46]">NA</div></div></div>
+        </header>
+        <div className="mx-auto max-w-[1320px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
+          <section className="relative overflow-hidden rounded-[26px] bg-forest px-6 py-7 text-white sm:px-9 sm:py-9 lg:px-11 lg:py-10">
+            <div className="absolute -right-8 -top-24 h-72 w-72 rounded-full border border-white/[.08]" /><div className="absolute -right-1 -top-16 h-60 w-60 rounded-full border border-white/[.08]" /><div className="absolute -bottom-32 right-[24%] h-64 w-64 rounded-full bg-[#42684f]/35 blur-2xl" />
+            <div className="relative z-10 max-w-[560px]"><div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[.08] px-2.5 py-1 text-[10px] font-semibold text-[#e2edda]"><Sparkles size={12} className="text-lime" /> SEMANGAT BELAJAR HARI INI</div><h1 className="font-display text-[26px] font-bold leading-[1.2] tracking-[-.045em] sm:text-[34px]">Selamat pagi, Nadia <span className="inline-block origin-bottom-right animate-[wave_1.5s_ease-in-out_infinite]">👋</span></h1><p className="mt-2.5 max-w-[420px] text-[12px] leading-relaxed text-[#d2dfd2] sm:text-[13px]">Siap untuk ujian hari ini? Satu langkah kecil hari ini membawa kamu lebih dekat pada cita-cita.</p><div className="mt-6 flex flex-wrap items-center gap-3"><button onClick={startExam} className="flex items-center gap-2 rounded-xl bg-lime px-4 py-2.5 text-[12px] font-bold text-ink shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-[#e1fa9d]">Masuk ruang ujian <ArrowRight size={15} /></button><span className="text-[10px] text-[#c6d6c6]">Matematika · 09.00 WIB</span></div></div>
+            <div className="absolute bottom-0 right-7 hidden h-[190px] w-[200px] items-end justify-center sm:flex"><div className="absolute bottom-0 h-[155px] w-[155px] rounded-t-full bg-[#d6f379]" /><div className="relative z-10 mb-[-2px] flex h-[152px] w-[118px] items-center justify-center"><div className="absolute bottom-0 h-[132px] w-[104px] rounded-t-[48px] bg-[#eee2d1]" /><div className="absolute bottom-[87px] z-10 h-[58px] w-[55px] rounded-[46%] bg-[#bd8261]" /><div className="absolute bottom-[123px] z-20 h-5 w-[60px] rounded-t-full bg-[#25362d]" /><div className="absolute bottom-[129px] left-[69px] z-20 h-[18px] w-[48px] rotate-[-12deg] rounded-full bg-[#25362d]" /><div className="absolute bottom-[35px] z-20 h-2 w-[84px] rounded-full bg-[#536e55]" /><div className="absolute bottom-[15px] z-20 h-[26px] w-[3px] bg-[#536e55]" /><div className="absolute bottom-[5px] z-20 h-[8px] w-[25px] rounded-t-full bg-[#536e55]" /><div className="absolute bottom-[74px] right-[34px] z-30 h-[20px] w-[4px] rotate-[-7deg] rounded-full bg-[#344c3c]" /><div className="absolute bottom-[75px] right-[47px] z-30 h-[5px] w-[5px] rounded-full bg-[#344c3c]" /></div></div>
+          </section>
 
-        <footer className="border-t border-slate-100 px-8 py-5 text-sm text-slate-500 sm:px-10">
-          Tahap 1 selesai — skema database dan data seed telah disiapkan.
-        </footer>
-      </section>
-    </main>
-  );
+          <section className="mt-7 grid gap-3 sm:grid-cols-3 sm:gap-4">
+            <StatCard icon={CalendarDays} label="Ujian mendatang" value="03" detail="Dalam 7 hari ke depan" tint="bg-[#e8efe2] text-forest" />
+            <StatCard icon={CheckCircle2} label="Ujian selesai" value="12" detail="Dari 15 ujian semester ini" tint="bg-[#e7edff] text-[#5b6db0]" />
+            <StatCard icon={Activity} label="Rata-rata nilai" value="87,4" detail={<span className="inline-flex items-center gap-1 text-[#4e8b58]"><ArrowUpRight size={13} /> Naik 4,2 poin dari bulan lalu</span>} tint="bg-[#fbe9dc] text-[#b9764b]" />
+          </section>
+
+          <section className="mt-8 grid gap-6 xl:grid-cols-[1.65fr_1fr]">
+            <div><div className="mb-4 flex items-end justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#93a094]">SIAPKAN DIRIMU</p><h2 className="mt-1 font-display text-[18px] font-bold tracking-[-.035em]">Ujian mendatang</h2></div><button onClick={() => { setActive('Jadwal Ujian'); showNotice('Menampilkan semua jadwal ujian') }} className="flex items-center gap-1 text-[11px] font-bold text-forest hover:underline">Lihat semua <ArrowRight size={13} /></button></div>
+              <div className="space-y-3">{exams.map((exam, index) => <ExamCard key={exam.subject} exam={exam} index={index} onStart={startExam} />)}</div>
+            </div>
+            <div className="space-y-5">
+              <div className="rounded-[22px] border border-[#e8ebe4] bg-white p-5 shadow-card sm:p-6"><div className="flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.13em] text-[#98a198]">PROGRES BELAJAR</p><h2 className="mt-1 font-display text-[16px] font-bold">Performa semester</h2></div><button className="rounded-lg p-1.5 text-[#9aa29a] hover:bg-[#f5f7f2]"><MoreHorizontal size={18} /></button></div><div className="mt-5 flex items-end justify-between"><div><span className="font-display text-[33px] font-extrabold tracking-[-.05em]">87,4</span><span className="ml-1 text-[11px] text-[#899389]">/ 100</span></div><span className="mb-1 inline-flex items-center gap-1 rounded-full bg-[#eaf3e7] px-2 py-1 text-[9px] font-bold text-[#52825b]"><ArrowUpRight size={12} /> 4,2%</span></div><div className="mt-4 flex h-[92px] items-end gap-2">{[35, 47, 42, 58, 50, 72, 63, 82, 70, 91, 76, 100].map((height, i) => <div key={i} className={`flex-1 rounded-t-[5px] transition ${i === 11 ? 'bg-forest' : 'bg-[#e8eee4]'}`} style={{ height: `${height}%` }} />)}</div><div className="mt-2 flex justify-between text-[9px] text-[#9ca49b]"><span>Mei</span><span>Jun</span><span>Jul</span><span>Agu</span><span>Sep</span><span>Okt</span></div></div>
+              <div className="rounded-[22px] border border-[#e8ebe4] bg-white p-5 shadow-card sm:p-6"><div className="flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.13em] text-[#98a198]">TERAKHIR DIKERJAKAN</p><h2 className="mt-1 font-display text-[16px] font-bold">Hasil ujian</h2></div><button onClick={() => { setActive('Hasil Ujian'); showNotice('Menampilkan hasil ujian') }} className="text-[10px] font-bold text-forest">Semua hasil <ArrowRight size={12} className="ml-0.5 inline" /></button></div><div className="mt-4 flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fbe9dc] text-[15px] font-bold text-[#b9764b]">Aa</div><div className="min-w-0 flex-1"><p className="truncate text-[12px] font-bold">Bahasa Inggris</p><p className="mt-0.5 text-[10px] text-[#959e95]">UH 2 · 12 Okt 2026</p></div><div className="text-right"><p className="font-display text-[17px] font-extrabold">92</p><p className="text-[9px] font-semibold text-[#568360]">Sangat baik</p></div></div><div className="my-3 h-px bg-[#f0f1ed]"/><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e7edff] text-[15px] font-bold text-[#5368b6]">∑</div><div className="min-w-0 flex-1"><p className="truncate text-[12px] font-bold">Matematika</p><p className="mt-0.5 text-[10px] text-[#959e95]">Kuis 4 · 8 Okt 2026</p></div><div className="text-right"><p className="font-display text-[17px] font-extrabold">84</p><p className="text-[9px] font-semibold text-[#b07a52]">Terus berlatih</p></div></div></div>
+            </div>
+          </section>
+          <footer className="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-[#e7ebe4] pt-5 text-[10px] text-[#9aa299]"><span>© 2026 Ruang Ujian · SMA Negeri 1 Jayapura</span><span className="flex items-center gap-1"><ShieldCheck size={12} /> Data ujian tersimpan dengan aman</span></footer>
+        </div>
+      </main>
+      {notice && <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-xl bg-ink px-4 py-3 text-[12px] font-semibold text-white shadow-xl"><CheckCircle2 size={16} className="text-lime" />{notice}</div>}
+    </div>
+  )
 }
+
+function StatCard({ icon: Icon, label, value, detail, tint }) {
+  return <div className="flex items-center gap-3.5 rounded-[18px] border border-[#e9ece5] bg-white px-4 py-4 shadow-card sm:gap-4 sm:px-5"><div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] ${tint}`}><Icon size={19} strokeWidth={1.9} /></div><div className="min-w-0 flex-1"><p className="text-[10px] font-medium text-[#8e988e] sm:text-[11px]">{label}</p><div className="mt-0.5 flex items-center gap-2"><p className="font-display text-[21px] font-extrabold leading-tight tracking-[-.04em]">{value}</p></div><p className="mt-1 truncate text-[9px] text-[#929b92] sm:text-[10px]">{detail}</p></div></div>
+}
+
+function ExamCard({ exam, index, onStart }) {
+  return <div className="group flex items-center gap-3 rounded-[18px] border border-[#e8ebe4] bg-white p-4 shadow-card transition hover:-translate-y-0.5 hover:shadow-lg sm:gap-4 sm:p-[18px]"><div className={`flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[14px] text-[17px] font-bold ${exam.color}`}>{exam.icon}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="truncate text-[12px] font-bold sm:text-[13px]">{exam.subject}</p>{index === 0 && <span className="rounded-full bg-[#eef4e9] px-2 py-0.5 text-[8px] font-bold text-forest">HARI INI</span>}</div><p className="mt-1 truncate text-[10px] text-[#919a91]">{exam.topic}</p><div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] text-[#9aa299]"><span className="flex items-center gap-1"><CalendarDays size={11} />{exam.date}</span><span className="flex items-center gap-1"><Clock3 size={11} />{exam.time}</span></div></div><div className="hidden text-right md:block"><p className={`text-[9px] font-semibold ${index === 0 ? 'text-[#578462]' : 'text-[#9aa299]'}`}>{exam.status}</p><p className="mt-1 text-[9px] text-[#abb1aa]">{exam.duration}</p></div>{index === 0 ? <button onClick={onStart} className="rounded-lg bg-forest px-3 py-2 text-[10px] font-bold text-white transition hover:bg-[#18392a] sm:px-3.5">Mulai</button> : <button onClick={() => {}} aria-label="Detail ujian" className="rounded-lg border border-[#e8ebe4] px-2.5 py-2 text-[10px] font-bold text-[#738073] hover:bg-[#f6f8f4]"><ArrowRight size={14} /></button>}</div>
+}
+
+function ExamScreen({ question, setQuestion, answers, setAnswers, flagged, setFlagged, seconds, formatTime, setExamOpen, finishExam, showSubmit, setShowSubmit, submitted, setSubmitted }) {
+  const current = questions[question]
+  const answeredCount = Object.keys(answers).length
+  const toggleFlag = () => setFlagged((items) => items.includes(question) ? items.filter((item) => item !== question) : [...items, question])
+  return <div className="min-h-screen bg-[#f5f6f2] text-ink">
+    <header className="sticky top-0 z-20 border-b border-[#e6e9e2] bg-white"><div className="mx-auto flex h-[68px] max-w-[1440px] items-center justify-between px-4 sm:px-8"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-forest text-lime"><GraduationCap size={21} /></div><div><p className="font-display text-[14px] font-extrabold tracking-[-.04em]">ruang<span className="text-forest">ujian</span></p><p className="text-[9px] text-[#929a91]">SMA Negeri 1 Jayapura</p></div><div className="ml-2 hidden h-8 w-px bg-[#e7ebe4] sm:block"/><div className="ml-1 hidden sm:block"><p className="text-[11px] font-bold">Ujian Matematika</p><p className="mt-0.5 text-[9px] text-[#979f97]">XI IPA 2 · Trigonometri & limit</p></div></div><div className="flex items-center gap-2 sm:gap-4"><div className={`flex items-center gap-2 rounded-xl px-3 py-2 ${seconds < 300 ? 'bg-[#fff0ed] text-[#c6503f]' : 'bg-[#f1f5ed] text-forest'}`}><Timer size={15}/><span className="font-display text-[13px] font-extrabold tabular-nums">{formatTime(seconds)}</span><span className="hidden text-[9px] sm:inline">tersisa</span></div><button onClick={() => setShowSubmit(true)} className="rounded-xl bg-forest px-3.5 py-2.5 text-[10px] font-bold text-white transition hover:bg-[#18392a] sm:px-4 sm:text-[11px]">Selesaikan ujian</button></div></div></header>
+    {submitted ? <div className="mx-auto flex min-h-[calc(100vh-68px)] max-w-[700px] items-center justify-center px-5"><div className="fade-in w-full rounded-[28px] border border-[#e7ebe4] bg-white p-8 text-center shadow-card sm:p-12"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#eaf3e7] text-forest"><CheckCircle2 size={34}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.16em] text-[#89968b]">UJIAN SELESAI</p><h1 className="mt-2 font-display text-[26px] font-extrabold tracking-[-.04em]">Kerja bagus, Nadia!</h1><p className="mx-auto mt-2 max-w-[380px] text-[12px] leading-relaxed text-[#879087]">Jawabanmu berhasil dikumpulkan. Hasil ujian akan tersedia setelah guru menyelesaikan penilaian.</p><div className="mx-auto mt-6 flex max-w-[330px] justify-center gap-8 rounded-2xl bg-[#f6f7f3] p-4"><div><p className="font-display text-[22px] font-extrabold">{answeredCount}<span className="text-[13px] text-[#9aa299]">/{questions.length}</span></p><p className="text-[10px] text-[#899389]">Terjawab</p></div><div className="h-10 w-px bg-[#e6e9e2]"/><div><p className="font-display text-[22px] font-extrabold">{formatTime(89 * 60 + 42 - seconds)}</p><p className="text-[10px] text-[#899389]">Waktu digunakan</p></div></div><button onClick={() => { setExamOpen(false); setSubmitted(false) }} className="mt-7 rounded-xl bg-forest px-5 py-3 text-[11px] font-bold text-white">Kembali ke beranda</button></div></div> : <div className="mx-auto grid max-w-[1440px] gap-5 px-4 py-5 sm:px-8 lg:grid-cols-[minmax(0,1fr)_290px] lg:gap-7 lg:py-8">
+      <section><div className="flex items-center justify-between"><button onClick={() => { setExamOpen(false); setSubmitted(false) }} className="flex items-center gap-1.5 text-[10px] font-semibold text-[#899389] hover:text-ink"><ArrowLeft size={14}/> Keluar dari ujian</button><div className="flex items-center gap-1.5 rounded-full bg-[#eaf3e7] px-2.5 py-1 text-[9px] font-bold text-[#53835c]"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#5d9967]"/> JAWABAN TERSIMPAN</div></div><div className="mt-5 h-1.5 overflow-hidden rounded-full bg-[#e6eae2]"><div className="h-full rounded-full bg-forest transition-all" style={{width:`${(answeredCount / questions.length) * 100}%`}}/></div><div className="mt-2 flex justify-between text-[9px] text-[#9aa199]"><span>Progres ujian</span><span>{answeredCount} dari {questions.length} soal dijawab</span></div>
+      <div className="mt-5 rounded-[22px] border border-[#e6e9e2] bg-white p-5 shadow-card sm:mt-7 sm:p-8"><div className="flex items-start justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.12em] text-[#8d998d]">SOAL {String(question + 1).padStart(2,'0')} <span className="mx-1.5 text-[#c1c8bf]">/</span> {questions.length}</p><p className="mt-2 text-[11px] font-semibold text-[#8c968c]">{current.subject}</p></div><button onClick={toggleFlag} className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-[9px] font-semibold transition ${flagged.includes(question) ? 'border-[#f2d8b6] bg-[#fff8ed] text-[#a77730]' : 'border-[#e9ece6] text-[#8d978d] hover:bg-[#f7f8f5]'}`}><Flag size={13} fill={flagged.includes(question) ? 'currentColor' : 'none'}/><span className="hidden sm:inline">{flagged.includes(question) ? 'Ditandai' : 'Tandai soal'}</span></button></div><h1 className="mt-6 max-w-[740px] font-display text-[17px] font-bold leading-[1.55] tracking-[-.02em] sm:mt-8 sm:text-[20px]">{current.text}</h1><div className="mt-6 space-y-2.5 sm:mt-8">{current.options.map((option,index) => <button key={option} onClick={() => setAnswers((prev) => ({...prev,[question]:index}))} className={`group flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition sm:gap-4 sm:px-4 sm:py-3.5 ${answers[question] === index ? 'border-forest bg-[#f0f5eb] shadow-sm' : 'border-[#e8ebe4] hover:border-[#bdcbbb] hover:bg-[#fafbf8]'}`}><span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold ${answers[question] === index ? 'bg-forest text-white' : 'bg-[#f2f4ef] text-[#7e897e] group-hover:bg-[#eaf0e5]'}`}>{String.fromCharCode(65 + index)}</span><span className="text-[12px] font-medium text-[#39483c]">{option}</span>{answers[question] === index && <Check size={16} className="ml-auto text-forest"/>}</button>)}</div><div className="mt-7 flex items-center justify-between border-t border-[#eff1ed] pt-5"><button disabled={question === 0} onClick={() => setQuestion((q) => Math.max(0,q-1))} className="flex items-center gap-1.5 rounded-lg border border-[#e7ebe4] px-3 py-2.5 text-[10px] font-bold text-[#69776a] disabled:opacity-40"><ChevronLeft size={14}/> Sebelumnya</button><button onClick={() => question === questions.length - 1 ? setShowSubmit(true) : setQuestion((q) => Math.min(questions.length-1,q+1))} className="flex items-center gap-1.5 rounded-lg bg-forest px-4 py-2.5 text-[10px] font-bold text-white hover:bg-[#18392a]">{question === questions.length - 1 ? 'Tinjau jawaban' : 'Soal berikutnya'} <ChevronRight size={14}/></button></div></div>
+      <div className="mt-4 flex items-start gap-2 rounded-xl border border-[#e8ebe4] bg-white p-3.5 text-[10px] leading-relaxed text-[#7f897f]"><CircleHelp size={15} className="mt-0.5 shrink-0 text-[#849282]"/><p>Pilih satu jawaban yang paling tepat. Jawaban tersimpan otomatis saat kamu memilih opsi.</p></div></section>
+      <aside className="space-y-4"><div className="rounded-[20px] border border-[#e6e9e2] bg-white p-5 shadow-card"><div className="flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.12em] text-[#929d92]">LEMBAR JAWABAN</p><p className="mt-1 text-[11px] text-[#8d978d]">Pilih nomor untuk berpindah</p></div><FileText size={17} className="text-[#879483]"/></div><div className="mt-4 grid grid-cols-4 gap-2">{questions.map((_,i) => <button key={i} onClick={() => setQuestion(i)} className={`relative flex h-10 items-center justify-center rounded-lg border text-[11px] font-bold transition ${question===i ? 'border-forest bg-forest text-white' : answers[i] !== undefined ? 'border-[#d8e7d1] bg-[#edf4e9] text-forest' : 'border-[#e8ebe4] text-[#889388] hover:border-[#bbc8b7]'}`}>{String(i+1).padStart(2,'0')}{flagged.includes(i)&&<span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#d89a4e]"/>}</button>)}</div><div className="mt-4 space-y-2 border-t border-[#eff1ed] pt-4"><Legend color="bg-forest" label="Soal yang dibuka"/><Legend color="bg-[#d8e7d1]" label="Sudah dijawab"/><Legend color="bg-[#d89a4e]" label="Ditandai untuk ditinjau"/></div></div><div className="rounded-[20px] border border-[#e6e9e2] bg-white p-5 shadow-card"><div className="flex items-center gap-2"><ShieldCheck size={17} className="text-forest"/><p className="text-[11px] font-bold">Tata tertib ujian</p></div><ul className="mt-3 space-y-2.5 text-[10px] leading-relaxed text-[#838e83]"><li className="flex gap-2"><span className="text-forest">•</span> Jangan menutup halaman selama ujian berlangsung.</li><li className="flex gap-2"><span className="text-forest">•</span> Waktu ujian akan terus berjalan.</li><li className="flex gap-2"><span className="text-forest">•</span> Periksa kembali jawaban sebelum dikumpulkan.</li></ul></div></aside>
+    </div>}
+    {showSubmit && !submitted && <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 p-4 backdrop-blur-[2px]"><div className="fade-in w-full max-w-[390px] rounded-[22px] bg-white p-6 shadow-2xl"><div className="flex items-start justify-between"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff4e8] text-[#b47a39]"><FileText size={19}/></div><button onClick={() => setShowSubmit(false)} className="rounded-lg p-1.5 text-[#9ca39b] hover:bg-[#f4f5f1]"><X size={17}/></button></div><h2 className="mt-4 font-display text-[18px] font-extrabold tracking-[-.03em]">Selesaikan ujian?</h2><p className="mt-1.5 text-[11px] leading-relaxed text-[#879087]">Kamu sudah menjawab <b className="text-ink">{answeredCount} dari {questions.length} soal</b>. Jawaban yang sudah dikumpulkan tidak bisa diubah.</p><div className="mt-4 flex items-center gap-2 rounded-xl bg-[#f7f8f5] p-3 text-[10px] text-[#768076]"><Clock3 size={14}/>{questions.length-answeredCount} soal belum dijawab <span className="ml-auto font-bold text-[#a87735]">{flagged.length} ditandai</span></div><div className="mt-5 flex gap-2"><button onClick={() => setShowSubmit(false)} className="flex-1 rounded-xl border border-[#e6e9e2] py-2.5 text-[10px] font-bold text-[#657165]">Kembali periksa</button><button onClick={finishExam} className="flex-1 rounded-xl bg-forest py-2.5 text-[10px] font-bold text-white">Ya, kumpulkan</button></div></div></div>}
+  </div>
+}
+
+function Legend({color,label}) { return <div className="flex items-center gap-2 text-[9px] text-[#879187]"><span className={`h-2 w-2 rounded-[3px] ${color}`}/>{label}</div> }
+
+export default App
